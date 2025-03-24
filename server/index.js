@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 10000; // лучше сделать 10000 как fallback, но он всё равно не используется на Render
+const PORT = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -20,7 +20,9 @@ app.get("/", (req, res) => {
 app.post('/api/enhance-text', async (req, res) => {
   const { text, systemPrompt } = req.body;
 
-  if (!text?.trim()) return res.status(400).json({ error: 'Text is empty' });
+  if (!text?.trim()) {
+    return res.status(400).json({ error: 'Text is empty' });
+  }
 
   try {
     const response = await fetch(IO_API_URL, {
@@ -41,14 +43,25 @@ app.post('/api/enhance-text', async (req, res) => {
     });
 
     const data = await response.json();
+
+    // 🔍 Логируем весь ответ от внешнего API
+    console.log("🧠 Full AI API response:", JSON.stringify(data, null, 2));
+
     const content = data?.choices?.[0]?.message?.content;
-    res.json({ result: content?.trim() || text });
+
+    // Если content нет — логируем ошибку
+    if (!content) {
+      console.error("⚠️ Invalid or empty response from AI API.");
+      return res.status(500).json({ error: 'AI did not return a valid response.' });
+    }
+
+    res.json({ result: content.trim() });
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('❌ Proxy error:', error);
     res.status(500).json({ error: 'Failed to enhance text' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`✅ Server is running on port ${PORT}`);
 });
