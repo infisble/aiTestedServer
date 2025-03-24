@@ -32,7 +32,7 @@ app.post('/api/enhance-text', async (req, res) => {
         'Authorization': `Bearer ${IO_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'meta-llama/Llama-3.3-70B-Instruct',
+        model: 'deepseek-ai/DeepSeek-R1',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
@@ -44,12 +44,12 @@ app.post('/api/enhance-text', async (req, res) => {
 
     const data = await response.json();
 
-    // 🔍 Логируем весь ответ от внешнего API
+    //  Логируем ответ
     console.log("🧠 Full AI API response:", JSON.stringify(data, null, 2));
 
     const content = data?.choices?.[0]?.message?.content;
 
-    // Если content нет — логируем ошибку
+    //  логируем ошибку
     if (!content) {
       console.error("⚠️ Invalid or empty response from AI API.");
       return res.status(500).json({ error: 'AI did not return a valid response.' });
