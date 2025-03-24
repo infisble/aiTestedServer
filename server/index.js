@@ -43,9 +43,11 @@ app.post('/api/enhance-text', async (req, res) => {
     });
 
     const data = await response.json();
+console.log("📡 AI API status:", response.status);
+console.log("🧠 Full AI API response:", JSON.stringify(data, null, 2));
 
     //  Логируем ответ
-    console.log("🧠 Full AI API response:", JSON.stringify(data, null, 2));
+    
 
     const content = data?.choices?.[0]?.message?.content;
 
