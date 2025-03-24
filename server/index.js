@@ -1,69 +1,54 @@
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+from flask import Flask, request, jsonify
+import os
+import requests
+from dotenv import load_dotenv
 
-const app = express();
-const PORT = process.env.PORT || 10000;
+# Load environment variables from .env file
+load_dotenv()
 
-app.use(cors());
-app.use(bodyParser.json());
+app = Flask(__name__)
 
-const IO_API_KEY = process.env.IO_API_KEY;
-const IO_API_URL = 'https://api.intelligence.io.solutions/api/v1/';
+# Retrieve environment variables
+IO_API_KEY = os.getenv('IO_API_KEY')
+PORT = int(os.getenv('PORT', 10000))
+IO_API_URL = 'https://api.intelligence.io.solutions/api/v1/chat/completions'
 
-app.get("/", (req, res) => {
-  res.send("Hello from aiTestedServer!");
-});
+@app.route('/')
+def home():
+    return "Hello from aiTestedServer!"
 
-app.post('/api/enhance-text', async (req, res) => {
-  const { text, systemPrompt } = req.body;
+@app.route('/api/enhance-text', methods=['POST'])
+def enhance_text():
+    data = request.json
+    text = data.get('text', '').strip()
+    system_prompt = data.get('systemPrompt', '')
 
-  if (!text?.trim()) {
-    return res.status(400).json({ error: 'Text is empty' });
-  }
+    if not text:
+        return jsonify({'error': 'Text is empty'}), 400
 
-  try {
-    const response = await fetch(IO_API_URL, {
-      method: 'POST',
-      headers: {
+    headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${IO_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-ai/DeepSeek-R1',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: text }
+        'Authorization': f'Bearer {IO_API_KEY}',
+    }
+    payload = {
+        'model': 'deepseek-ai/DeepSeek-R1',
+        'messages': [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': text}
         ],
-        temperature: 0.7,
-        max_tokens: 200,
-      })
-    });
-
-    const data = await response.json();
-console.log("📡 AI API status:", response.status);
-console.log("🧠 Full AI API response:", JSON.stringify(data, null, 2));
-
-    //  Логируем ответ
-    
-
-    const content = data?.choices?.[0]?.message?.content;
-
-    //  логируем ошибку
-    if (!content) {
-      console.error("⚠️ Invalid or empty response from AI API.");
-      return res.status(500).json({ error: 'AI did not return a valid response.' });
+        'temperature': 0.7,
+        'max_tokens': 200,
     }
 
-    res.json({ result: content.trim() });
-  } catch (error) {
-    console.error('❌ Proxy error:', error);
-    res.status(500).json({ error: 'Failed to enhance text' });
-  }
-});
+    try:
+        response = requests.post(IO_API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        enhanced_text = result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        return jsonify({'enhanced_text': enhanced_text})
+    except requests.exceptions.RequestException as e:
+        print(f'Error: {e}')
+        return jsonify({'error': 'Failed to enhance text'}), 500
 
-app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-});
+if __name__ == '__main__':
+    app.run(port=PORT)
