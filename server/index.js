@@ -12,7 +12,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const IO_API_KEY = process.env.IO_API_KEY;
-const IO_API_URL = 'https://api.intelligence.io.solutions/api/v1/chat/completions';
+const IO_API_URL = 'https://api.intelligence.io.solutions/api/v1/';
 
 app.post('/api/enhance-text', async (req, res) => {
   const { text, systemPrompt } = req.body;
